@@ -1,12 +1,18 @@
 #include <iostream>
 #include<stack>
+#include <unordered_map>
 #include <vector>
 #include <string>
+#include<queue>
+#include<set>
+#include<map>
 using namespace std;
+
+string STR="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 struct nst
 {
-    vector<int> a[2], e;
+    vector<int> a[63], e;
     bool f=0;
 };
 
@@ -14,7 +20,7 @@ vector<nst> nfa;
 
 struct dst
 {
-    int a[2] = {-1,-1};
+    int a[63] = {-1};
     bool f=0;
 };
 
@@ -26,29 +32,8 @@ int nfa_size, dfa_size;
 string dispregex;
 
 struct nst init_nfa_state;
-
 struct dst init_dfa_state;
 
-string insert_concat(string regexp)
-{
-    string ret = "";
-    char c, c2;
-    for (unsigned int i = 0; i < regexp.size(); i++)
-    {
-        c = regexp[i];
-        if (i + 1 < regexp.size())
-        {
-            c2 = regexp[i + 1];
-            ret += c;
-            if (c != '(' && c2 != ')' && c != '|' && c2 != '|' && c2 != '*')
-            {
-                ret += '.';
-            }
-        }
-    }
-    ret += regexp[regexp.size() - 1];
-    return ret;
-}
 int priority(char c){
     switch(c){
         case '*': return 3;
@@ -57,29 +42,41 @@ int priority(char c){
         default: return 0;
     }
 }
-string regexp_to_postfix(string regexp)
+string reToPostfix(string re)
 {
+    string regexp = "";
+    char c, c2;
+    for (unsigned int i = 0; i < re.size(); i++)
+    {
+        c = re[i];
+        if (i + 1 < re.size())
+        {
+            c2 = re[i + 1];
+            regexp += c;
+            if (c != '(' && c2 != ')' && c != '|' && c2 != '|' && c2 != '*')
+            {
+                regexp += '.';
+            }
+        }
+    }
+    regexp += re[re.size() - 1];
     string postfix="";
     stack<char> op;
-    char c;
     for(unsigned int i=0; i<regexp.size(); i++)
     {
-        switch(regexp[i])
-        {
-            case 'a':
-            case 'b':
-                postfix+=regexp[i]; break;
-            case '(':
-                op.push(regexp[i]); break;
-            case ')':
-                while(op.top()!='('){
+        string::size_type position=STR.find(regexp[i]);
+        if(position!=string::npos){
+            postfix+=regexp[i];
+        }else if(regexp[i]=='('){
+            op.push(regexp[i]);
+        }else if(regexp[i]==')'){
+            while(op.top()!='('){
                     postfix+=op.top();
                     op.pop();
                 }
                 op.pop();
-                break;
-            default:
-                while(!op.empty()){
+        }else{
+            while(!op.empty()){
                     c=op.top();
                     if(priority(c)>=priority(regexp[i])){
                         postfix+=op.top();
@@ -89,7 +86,6 @@ string regexp_to_postfix(string regexp)
                 }
                 op.push(regexp[i]);
         }
-        //cout<<regexp[i]<<' '<<postfix<<endl;
     }
     while(!op.empty())
     {
@@ -142,10 +138,8 @@ void kleene_star()
 {
     nfa.push_back(init_nfa_state);
     nfa.push_back(init_nfa_state);
-    int b = st.top();
-    st.pop();
-    int a = st.top();
-    st.pop();
+    int b = st.top();st.pop();
+    int a = st.top();st.pop();
     nfa[nfa_size].e.push_back(a);
     nfa[nfa_size].e.push_back(nfa_size+1);
     nfa[b].e.push_back(a);
@@ -160,25 +154,120 @@ void postfix_to_nfa(string postfix)
 {
     for(unsigned int i=0; i<postfix.size(); i++)
     {
-        switch(postfix[i])
-        {
-        case 'a':
-        case 'b': character(postfix[i]-'a'); break;
-        case '*': kleene_star(); break;
-        case '.': concatenation(); break;
-        case '+': union_();
+        
+        string::size_type position=STR.find(postfix[i]);
+        if(position!=string::npos){
+            character(position);
+        }else if(postfix[i]=='*'){
+            kleene_star();
+        }else if(postfix[i]=='.'){
+            concatenation();
+        }else if(postfix[i]=='|'){
+            union_();
+        }else{
+            throw postfix[i]+"is not support";
         }
     }
 }
+void epsilon_closure(int state,set<int>&si){
+    for(unsigned int i=0;i<nfa[state].e.size();i++){
+        if(si.count(nfa[state].e[i])==0){
+            si.insert(nfa[state].e[i]);
+            epsilon_closure(nfa[state].e[i],si);
+        }
+    }
+}
+set<int> state_change(int i,set<int>&si){
+    set<int> temp;
+    for (std::set<int>::iterator it=si.begin(); it!=si.end(); ++it){
+        for(unsigned int j=0;j<nfa[*it].a[i].size();j++){
+            temp.insert(nfa[*it].a[i][j]);
+        }
+    }
+    return temp;
+}
 
+void nfa_to_dfa(set<int>&si,queue<set<int> >&que,int start_state){
+    map<set<int>, int> mp;                       //nfa状态集合与其标号对应关系
+    mp[si]=-1;
+    set<int> temp;
+    int ct=0;
+    si.clear();
+    si.insert(0);
+    epsilon_closure(start_state,si);            //初始化I0
+    if(mp.count(si)==0){
+        mp[si]=ct++;
+        que.push(si);
+    }
+    int p=0;//指向当前dfa
+    bool f1=false;
+    while(que.size()!=0){
+        dfa.push_back(init_dfa_state);
+        si.empty();
+        si=que.front();
+        //判断当前nfa状态集是否为终态
+        f1=false;
+        for (set<int>::iterator it=si.begin(); it!=si.end(); ++it){
+            if(nfa[*it].f==true)
+                f1=true;
+        }
+        dfa[p].f=f1;
+        //开始状态转化
+        for(int i=0;i<63;i++){
+            si=que.front();
+            temp=state_change(i,si);
+            si=temp;
+            for (set<int>::iterator it=si.begin(); it!=si.end(); ++it){
+                epsilon_closure(*it,si);
+            }
+            if(mp.count(si)==0){
+                mp[si]=ct;
+                que.push(si);
+                dfa[p].a[i]=ct++;
+            }
+            else{
+                dfa[p].a[i]=mp.find(si)->second;
+            }
+            temp.clear();
+        }
+        // si=que.front();
+        // temp2=state_change(si);
+        // si=temp2;
+        // for (set<int>::iterator it=si.begin(); it!=si.end(); ++it){
+        //     epsilon_closure(*it,si);
+        // }
+        // if(mp.count(si)==0){
+        //     mp[si]=ct++;
+        //     que.push(si);
+        //     dfa[p].a[1]=ct-1;
+        // }
+        // else{
+        //     dfa[p].a[1]=mp.find(si)->second;
+        // }
+        // temp2.clear();
+        que.pop();
+        p++;
+    }
+    for(int i=0;i<p;i++){
+        for(int j=0;j<63;j++)
+            if(dfa[i].a[j]==-1)dfa[i].a[j]=p;
+    }
+    dfa.push_back(init_dfa_state);
+    for(int j=0;j<63;j++)
+        dfa[p].a[j]=p;
+}
 int main()
 {
     string regexp;
     cin >> regexp;
-    string disp=insert_concat(regexp);
-    regexp=regexp_to_postfix(disp);
-    postfix_to_nfa(regexp);
-
-    cout<<disp<<endl;
-    cout<<regexp<<endl;
+    string postfix=reToPostfix(regexp);
+    postfix_to_nfa(postfix);
+    int final_state=st.top();st.pop();
+    int start_state=st.top();st.pop();
+    nfa[final_state].f=1;
+    cout<<postfix<<endl;
+    set<int> si;
+    queue<set<int> > que;
+    nfa_to_dfa(si,que,start_state);
+    cout<<endl;
 }
