@@ -6,6 +6,7 @@
 #include<queue>
 #include<set>
 #include<map>
+#include <algorithm>
 using namespace std;
 
 string STR="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -256,6 +257,86 @@ void nfa_to_dfa(set<int>&si,queue<set<int> >&que,int start_state){
     for(int j=0;j<63;j++)
         dfa[p].a[j]=p;
 }
+
+pair<int,vector<tuple<int,int,bool> > > minimize_dfa() {
+    vector<int> grp(dfa.size());                   // 状态数量
+    vector<vector<int> > part(2, vector<int>());   // 将dfa状态分为两部分
+
+    // 初始化状态
+    part[0].push_back(0);
+    for(int i=1; i<(int)grp.size(); i++) {
+        if(dfa[i].f==false) {
+            grp[i]=0;
+            part[0].push_back(i);
+        } else {
+            grp[i]=1;
+            part[1].push_back(i);
+        }
+    }
+    //初始化后part无终态时清除part[1]
+    if(!part[1].size()) 
+        part.erase(part.end());
+
+    bool chk=true;  //判断循环是否结束
+    int strt = 0;   //开始状态
+    while(chk) {
+        chk=false;
+        for(int i=0; i<part.size(); i++) {
+            for(int j=0; j<63; j++) {
+                
+                vector<pair<int,int> > trans(part[i].size()); //trans[0].first表示状态推导后是否为终态 
+                for(int k=0; k<part[i].size(); k++) {
+                    if(dfa[part[i][k]].a[j] >= 0)
+                        //对于每个dfa状态将其产生的状态是否为终态标记
+                        trans[k] = make_pair(grp[dfa[part[i][k]].a[j]],part[i][k]);
+                    else
+                        trans[k] = make_pair(-1,part[i][k]);
+                }
+                sort(trans.begin(), trans.end());
+
+                //分割每个部分
+                if(trans[0].first!=trans[trans.size()-1].first) {
+                    chk=true;
+                    int k, m = part.size()-1;
+                    part[i].clear();
+                    part[i].push_back(trans[0].second);
+                    //将具有相同推导后状态的状态组合在一起
+                    for(k=1; k<trans.size() && (trans[k].first==trans[k-1].first); k++) {
+                        part[i].push_back(trans[k].second);
+                    }
+
+                    while(k<trans.size()) {
+                        if(trans[k].first!=trans[k-1].first) {
+                            part.push_back(vector<int> ());
+                            m++;
+                        }
+                        grp[trans[k].second] = m;
+                        part[m].push_back(trans[k].second);
+                        k++;
+                    }
+                }
+            }
+        }
+    }
+
+    for(int i=0; i<part.size(); i++) {
+        for(int j=0; j<part[i].size(); j++) {
+            if(part[i][j]==0) strt=i;
+        }
+    }
+
+    vector<tuple<int,int,bool> > ret(part.size());
+    //cout<<part.size()<<endl;
+    //sort(part.begin(), part.end());
+    for(int i=0; i<(int)part.size(); i++) {
+        //cout<<grp[part[i][0]]<<endl;
+        get<0>(ret[i]) = (dfa[part[i][0]].a[0]>=0)?grp[dfa[part[i][0]].a[0]]:-1;
+        get<1>(ret[i]) = (dfa[part[i][0]].a[1]>=0)?grp[dfa[part[i][0]].a[1]]:-1;
+        get<2>(ret[i]) = dfa[part[i][0]].f;
+    }
+
+    return make_pair(strt, ret);
+}
 int main()
 {
     string regexp;
@@ -269,5 +350,6 @@ int main()
     set<int> si;
     queue<set<int> > que;
     nfa_to_dfa(si,que,start_state);
+    pair<int,vector<tuple<int,int,bool> > > ret= minimize_dfa();
     cout<<endl;
 }
