@@ -323,19 +323,11 @@ void minimize_dfa() {
             if(part[i][j]==0) strt=i;
         }
     }
-
-    //vector<tuple<int,int,bool> > ret(part.size());
-    //cout<<part.size()<<endl;
-    //sort(part.begin(), part.end());
     for(int i=0; i<(int)part.size(); i++) {
-        //cout<<grp[part[i][0]]<<endl;
         mini_dfa.push_back(init_dfa_state);
         for(int j=0;j<63;j++){
-            mini_dfa[mini_dfa.size()-1].a[j]=(dfa[part[i][0]].a[0]>=0)?grp[dfa[part[i][0]].a[0]]:-1;
+            mini_dfa[mini_dfa.size()-1].a[j]=(dfa[part[i][0]].a[j]>=0)?grp[dfa[part[i][0]].a[j]]:-1;
             mini_dfa[mini_dfa.size()-1].f=dfa[part[i][0]].f;
-            //get<0>(ret[i]) = (dfa[part[i][0]].a[0]>=0)?grp[dfa[part[i][0]].a[0]]:-1;
-            //get<1>(ret[i]) = (dfa[part[i][0]].a[1]>=0)?grp[dfa[part[i][0]].a[1]]:-1;
-            //get<2>(ret[i]) = dfa[part[i][0]].f;
         }
     }
 }
