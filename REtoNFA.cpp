@@ -10,7 +10,7 @@
 using namespace std;
 
 string STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const int STRLEN=63;
+const int STRLEN = 62;
 
 struct nst
 {
@@ -36,45 +36,60 @@ string dispregex;
 struct nst init_nfa_state;
 struct dst init_dfa_state;
 
-string reToStandardRE(string re){
+string reToStandardRE(string re)
+{
     string stand;
     for (int i = 0; i < re.size(); i++)
     {
-        if(re[i]=='['){
-            while(re[i]!=']'){
-                string temp="(";
+        if (re[i] == '[')
+        {
+            while (re[i] != ']')
+            {
+                string temp = "(";
                 string::size_type innerPos;
-                if((innerPos=re.find('-',i))!=string::npos){
-                    string::size_type startPos=STR.find(re[innerPos-1]);
-                    string::size_type endPos=STR.find(re[innerPos+1]);
-                    if(startPos==string::npos || endPos==string::npos) throw "character not supported in []";
+                if ((innerPos = re.find('-', i)) != string::npos)
+                {
+                    string::size_type startPos = STR.find(re[innerPos - 1]);
+                    string::size_type endPos = STR.find(re[innerPos + 1]);
+                    if (startPos == string::npos || endPos == string::npos)
+                        throw "character not supported in []";
                     else
-                        for( ;startPos<=endPos;startPos++) temp+=STR[startPos]+"|";
+                        for (; startPos <= endPos; startPos++)
+                        {
+                            char c = STR[startPos];
+                            temp.push_back(c);
+                            temp.push_back('|');
+                        }
                     temp.pop_back();
-                    temp+=")";
+                    temp += ")";
                 }
-                stand+=temp;
-                i+=4;
+                stand += temp;
+                i += 4;
             }
         }
-        else if(re[i]=='.'){
-            string temp="(";
-            for (int j = 0; i <STRLEN; i++)
+        else if (re[i] == '.')
+        {
+            string temp = "(";
+            for (int j = 0; j < STRLEN; j++)
             {
-                temp+=STR[j]+"|";
+                char c = STR[j];
+                temp.push_back(c);
+                temp.push_back('|');
             }
             temp.pop_back();
-            stand+=temp+")";
-            
+            stand += temp + ")";
         }
-        else if(re[i]=='+'){
-            stand+=stand[stand.size()-1]+"*";
+        else if (re[i] == '+')
+        {
+            stand.push_back(stand[stand.size() - 1]);
+            stand.push_back('*');
         }
-        else{
-            stand+=re[i];
+        else
+        {
+            stand.push_back(re[i]);
         }
     }
-    
+
     return stand;
 }
 
@@ -433,8 +448,8 @@ int main()
 {
     string regexp;
     cin >> regexp;
-    string standRE=reToStandardRE(regexp);
-    cout<<standRE<<endl;
+    string standRE = reToStandardRE(regexp);
+    cout << standRE << endl;
     string postfix = reToPostfix(standRE);
     postfix_to_nfa(postfix);
     int final_state = st.top();
