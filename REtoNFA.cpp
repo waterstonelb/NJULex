@@ -26,7 +26,7 @@ struct dst
 };
 
 vector<dst> dfa;
-
+vector<dst> mini_dfa;
 stack<int> st;
 
 int nfa_size, dfa_size;
@@ -258,7 +258,7 @@ void nfa_to_dfa(set<int>&si,queue<set<int> >&que,int start_state){
         dfa[p].a[j]=p;
 }
 
-pair<int,vector<tuple<int,int,bool> > > minimize_dfa() {
+void minimize_dfa() {
     vector<int> grp(dfa.size());                   // 状态数量
     vector<vector<int> > part(2, vector<int>());   // 将dfa状态分为两部分
 
@@ -304,7 +304,6 @@ pair<int,vector<tuple<int,int,bool> > > minimize_dfa() {
                     for(k=1; k<trans.size() && (trans[k].first==trans[k-1].first); k++) {
                         part[i].push_back(trans[k].second);
                     }
-
                     while(k<trans.size()) {
                         if(trans[k].first!=trans[k-1].first) {
                             part.push_back(vector<int> ());
@@ -325,17 +324,20 @@ pair<int,vector<tuple<int,int,bool> > > minimize_dfa() {
         }
     }
 
-    vector<tuple<int,int,bool> > ret(part.size());
+    //vector<tuple<int,int,bool> > ret(part.size());
     //cout<<part.size()<<endl;
     //sort(part.begin(), part.end());
     for(int i=0; i<(int)part.size(); i++) {
         //cout<<grp[part[i][0]]<<endl;
-        get<0>(ret[i]) = (dfa[part[i][0]].a[0]>=0)?grp[dfa[part[i][0]].a[0]]:-1;
-        get<1>(ret[i]) = (dfa[part[i][0]].a[1]>=0)?grp[dfa[part[i][0]].a[1]]:-1;
-        get<2>(ret[i]) = dfa[part[i][0]].f;
+        mini_dfa.push_back(init_dfa_state);
+        for(int j=0;j<63;j++){
+            mini_dfa[mini_dfa.size()-1].a[j]=(dfa[part[i][0]].a[0]>=0)?grp[dfa[part[i][0]].a[0]]:-1;
+            mini_dfa[mini_dfa.size()-1].f=dfa[part[i][0]].f;
+            //get<0>(ret[i]) = (dfa[part[i][0]].a[0]>=0)?grp[dfa[part[i][0]].a[0]]:-1;
+            //get<1>(ret[i]) = (dfa[part[i][0]].a[1]>=0)?grp[dfa[part[i][0]].a[1]]:-1;
+            //get<2>(ret[i]) = dfa[part[i][0]].f;
+        }
     }
-
-    return make_pair(strt, ret);
 }
 int main()
 {
@@ -350,6 +352,6 @@ int main()
     set<int> si;
     queue<set<int> > que;
     nfa_to_dfa(si,que,start_state);
-    pair<int,vector<tuple<int,int,bool> > > ret= minimize_dfa();
+    minimize_dfa();
     cout<<endl;
 }
