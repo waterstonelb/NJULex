@@ -1,5 +1,6 @@
-FIRST/ALL       [a-zA-Z0-9]first+
-FIRST/LESS      [b-yC-X5-6](less|LESS)
+FIRST/ALL       [a-z]first+
+FIRST/LESS      [5-6](less|LESS)
 SECOND/MORE     more.c*
 SECOND/MOST     MOST*(m|M)ost+
+THIRD/THIRD     aaa*|bbb*
 LAST            l*a*s*t*.
