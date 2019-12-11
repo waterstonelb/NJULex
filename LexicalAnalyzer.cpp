@@ -1,12 +1,12 @@
 #include <iostream>
-#include <stack>
-#include <unordered_map>
-#include <vector>
 #include <string>
-#include <queue>
+#include <vector>
+#include <stack>
 #include <set>
 #include <map>
+#include <queue>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 
 string STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -444,23 +444,74 @@ void minimize_dfa()
         }
     }
 }
+
+//解析每一个字符串，返回是否符合当前DFA词法
+bool parsingStr(const string str, int state)
+{
+
+    int strPos = 0;
+    while (strPos < str.size())
+    {
+        //找到STR中str每一位的对应位置，此位置即为mini_dfa中每一个状态下转化的触发字符
+        string::size_type pos = STR.find(str[strPos++]);
+        state = mini_dfa[state].a[pos];
+    }
+    //若最终状态停留在终态则返回值为1，否则为0
+    return mini_dfa[state].f;
+}
+
 int main()
 {
-    string regexp;
-    cin >> regexp;
-    string standRE = reToStandardRE(regexp);
-    cout << standRE << endl;
-    string postfix = reToPostfix(standRE);
-    postfix_to_nfa(postfix);
-    int final_state = st.top();
-    st.pop();
-    int start_state = st.top();
-    st.pop();
-    nfa[final_state].f = 1;
-    cout << postfix << endl;
-    set<int> si;
-    queue<set<int>> que;
-    nfa_to_dfa(si, que, start_state);
-    minimize_dfa();
-    cout << endl;
+    //生成最小状态DNF集合
+    ifstream inpLex("resources.txt");
+    string lex;
+    vector<vector<dst>> M_DFA;
+    vector<string[3]> LEX;
+    while (inpLex >> lex)
+    {
+        try
+        {
+            
+            string re;
+            cin >> re;
+            string stand = reToStandardRE(re);
+            cout << stand << endl;
+            string postfix = reToPostfix(stand);
+            cout << postfix << endl;
+            postfix_to_nfa(postfix);
+            int final_state = st.top();
+            st.pop();
+            int start_state = st.top();
+            st.pop();
+            nfa[final_state].f = 1;
+            set<int> si;
+            queue<set<int>> que;
+            nfa_to_dfa(si, que, start_state);
+            minimize_dfa();
+            M_DFA.push_back(mini_dfa);
+            mini_dfa.clear();
+            // int start = mini_dfa.size() - 1;
+            // bool is_match = parsingStr("9yyyyyyy", start);
+            // cout << is_match << endl;
+        }
+        catch (const char *e)
+        {
+            cout << e << endl;
+        }
+    }
+    //读取待匹配字符串进行match
+    inpLex.close();
+    ifstream inpTest("test.txt");
+    string str;
+    while (inpTest>>str)
+    {
+        for(vector<dst> a:M_DFA){
+            if(parsingStr(str,a.size()-1)){
+
+            }
+        }
+        
+    }
+    
+
 }
