@@ -234,43 +234,43 @@ void getConnect(vector<NFAstate> &NFA)
     workStack.push(end1);
 }
 
-void getRepeat(vector<NFAstate> &nfa)
+void getRepeat(vector<NFAstate> &NFA)
 {
-    int sizeNFA = nfa.size();
-    nfa.push_back(NFA_init);
-    nfa.push_back(NFA_init);
+    int sizeNFA = NFA.size();
+    NFA.push_back(NFA_init);
+    NFA.push_back(NFA_init);
     int end = workStack.top();
     workStack.pop();
     int start = workStack.top();
     workStack.pop();
-    nfa[sizeNFA].e.push_back(start);
-    nfa[sizeNFA].e.push_back(sizeNFA + 1);
-    nfa[end].e.push_back(start);
-    nfa[end].e.push_back(sizeNFA + 1);
+    NFA[sizeNFA].e.push_back(start);
+    NFA[sizeNFA].e.push_back(sizeNFA + 1);
+    NFA[end].e.push_back(start);
+    NFA[end].e.push_back(sizeNFA + 1);
     workStack.push(sizeNFA);
     sizeNFA++;
     workStack.push(sizeNFA);
     sizeNFA++;
 }
-void getClosure(int state, set<int> &si, vector<NFAstate> &nfa)
+void getClosure(int state, set<int> &workSet, vector<NFAstate> &NFA)
 {
-    for (unsigned int i = 0; i < nfa[state].e.size(); i++)
+    for (unsigned int i = 0; i < NFA[state].e.size(); i++)
     {
-        if (si.count(nfa[state].e[i]) == 0)
+        if (workSet.count(NFA[state].e[i]) == 0)
         {
-            si.insert(nfa[state].e[i]);
-            getClosure(nfa[state].e[i], si, nfa);
+            workSet.insert(NFA[state].e[i]);
+            getClosure(NFA[state].e[i], workSet, NFA);
         }
     }
 }
-set<int> state_change(int i, set<int> &si, vector<NFAstate> &nfa)
+set<int> state_change(int i, set<int> &workSet, vector<NFAstate> &NFA)
 {
     set<int> temp;
-    for (std::set<int>::iterator it = si.begin(); it != si.end(); ++it)
+    for (std::set<int>::iterator it = workSet.begin(); it != workSet.end(); ++it)
     {
-        for (unsigned int j = 0; j < nfa[*it].a[i].size(); j++)
+        for (unsigned int j = 0; j < NFA[*it].a[i].size(); j++)
         {
-            temp.insert(nfa[*it].a[i][j]);
+            temp.insert(NFA[*it].a[i][j]);
         }
     }
     return temp;
